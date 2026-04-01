@@ -22,6 +22,14 @@ public class SudokuSolver implements ISudokuSolver {
 
         // Initialize each D[X]...
 
+        for (int i = 0; i < size * size * size * size; i++) {
+            D.add(new ArrayList<Integer>());
+            for (int j = 0; j < puzzle[0].length; j++) {
+                D.get(i).add(0);
+            }
+        }
+
+        this.D.ensureCapacity(size * size * size * size);
     }
 
     public boolean solve() {
@@ -32,14 +40,23 @@ public class SudokuSolver implements ISudokuSolver {
         // at SudokuSolver.solve(SudokuSolver.java:35)
         // at SudokuGUI.mouseClicked(SudokuGUI.java:139)
 
-        int index = 0;
-        for (int[] i : puzzle) {
-            for (int j : i) {
-                System.out.println(index + ": " + j);
-                index++;
-            }
-        }
+        // int index = 0;
+        // for (int[] i : puzzle) {
+        // for (int j : i) {
+        // System.out.println(index + ": " + j);
+        // index++;
+        // }
+        // }
         ArrayList<Integer> asn = GetAssignment(puzzle);
+        System.out.println("No issue in solve");
+
+        if (!this.INITIAL_FC(asn))
+            return false;
+
+        asn = FC(asn);
+
+        System.out.println(asn.size());
+        System.out.println("Solved");
 
         // INITIAL_FC
         // FC
@@ -54,7 +71,7 @@ public class SudokuSolver implements ISudokuSolver {
     // ---------------------------------------------------------------------------------
     // YOUR TASK: Implement FC(asn)
     // ---------------------------------------------------------------------------------
-    public ArrayList FC(ArrayList<Integer> asn) {
+    public ArrayList<Integer> FC(ArrayList<Integer> asn) {
         if (!asn.contains(0))
             return asn;
         int X = asn.get(0);
@@ -65,7 +82,11 @@ public class SudokuSolver implements ISudokuSolver {
             }
         }
         ArrayList<ArrayList<Integer>> D_old = new ArrayList<ArrayList<Integer>>();
-        Collections.copy(D_old, this.D);
+        for (var lst : this.D) {
+            ArrayList<Integer> cp = new ArrayList<>(lst);
+            D_old.add(cp);
+        }
+        // Collections.copy(D_old, this.D);
 
         for (int V : this.D.get(X)) {
             if (this.AC_FC(X, V)) {
@@ -343,8 +364,8 @@ public class SudokuSolver implements ISudokuSolver {
                 asn.add(GetVariable(i, j), new Integer(p[i][j]));
                 if (p[i][j] != 0) {
                     // restrict domain
-                    D.get(GetVariable(i, j)).clear();
-                    D.get(GetVariable(i, j)).add(new Integer(p[i][j]));
+                    D.get(i).clear();
+                    D.get(i).add(new Integer(p[i][j]));
                 }
             }
         }
