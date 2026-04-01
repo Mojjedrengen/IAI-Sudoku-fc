@@ -33,13 +33,6 @@ public class SudokuSolver implements ISudokuSolver {
     }
 
     public boolean solve() {
-        // GetAssignment does not work :c
-        // Exception in thread "AWT-EventQueue-0" java.lang.IndexOutOfBoundsException:
-        // Index 70 out of bounds for length 0
-        // at SudokuSolver.GetAssignment(SudokuSolver.java:339)
-        // at SudokuSolver.solve(SudokuSolver.java:35)
-        // at SudokuGUI.mouseClicked(SudokuGUI.java:139)
-
         // int index = 0;
         // for (int[] i : puzzle) {
         // for (int j : i) {
