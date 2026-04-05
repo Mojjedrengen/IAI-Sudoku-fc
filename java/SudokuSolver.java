@@ -25,7 +25,7 @@ public class SudokuSolver implements ISudokuSolver {
         for (int i = 0; i < size * size * size * size; i++) {
             D.add(new ArrayList<Integer>());
             for (int j = 0; j < puzzle[0].length; j++) {
-                D.get(i).add(0);
+                D.get(i).add(j);
             }
         }
 
@@ -42,15 +42,23 @@ public class SudokuSolver implements ISudokuSolver {
         // }
         ArrayList<Integer> asn = GetAssignment(puzzle);
         System.out.println("No issue in solve");
+        System.out.println(asn);
 
         if (!this.INITIAL_FC(asn))
             return false;
 
         asn = FC(asn);
 
-        System.out.println(asn.size());
+        System.out.println(asn);
         System.out.println("Solved");
-
+        System.out.println(this.puzzle);
+        ArrayList<Integer> pz = new ArrayList<>();
+        for (var v : this.puzzle) {
+            for (var j : v) {
+                pz.add(j);
+            }
+        }
+        System.out.println(pz);
         // INITIAL_FC
         // FC
 
@@ -68,12 +76,21 @@ public class SudokuSolver implements ISudokuSolver {
         if (!asn.contains(0))
             return asn;
         int X = asn.get(0);
-        for (int x : asn) {
-            if (x == 0) {
-                X = x;
+        for (int i = 0; i < asn.size(); i++) {
+            int j = asn.get(i);
+            if (j == 0) {
+                X = i;
                 break;
             }
         }
+        int row = GetRow(X);
+        int col = GetColumn(X);
+        //for (int x : asn) {
+        //    if (x == 0) {
+        //        X = x;
+        //        break;
+        //    }
+        //}
         ArrayList<ArrayList<Integer>> D_old = new ArrayList<ArrayList<Integer>>();
         for (var lst : this.D) {
             ArrayList<Integer> cp = new ArrayList<>(lst);
@@ -84,11 +101,13 @@ public class SudokuSolver implements ISudokuSolver {
         for (int V : this.D.get(X)) {
             if (this.AC_FC(X, V)) {
                 asn.set(X, V);
+                this.setValue(col, row, V);
                 var R = FC(asn);
                 if (R != null) {
                     return R;
                 }
                 asn.set(X, 0);
+                this.setValue(col, row, 0);
                 this.D = D_old;
             } else
                 this.D = D_old;
