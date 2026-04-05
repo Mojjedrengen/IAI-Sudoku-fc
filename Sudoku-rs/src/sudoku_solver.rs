@@ -1,6 +1,6 @@
 use crate::sudoku_solver_trait::AbstractSudokuSolver;
 use array2d::{Array2D, Error};
-use std::intrinsics::breakpoint;
+use std::cmp::Ordering;
 use std::vec;
 
 pub struct SudokuSolver {
@@ -141,11 +141,154 @@ impl SudokuSolver {
         deleted
     }
 
+    // Created as a copy of the java version
     fn consistant(&self, asn: &[usize], variable: &usize, val: &usize) -> bool {
+        //let v1;
+        //let v2;
+        let mut asn = asn.to_vec().to_owned();
+        asn.insert(*variable, *val);
+
+        // allDiff(col[i])
+        for i in 0..self.size * self.size {
+            for j in 0..self.size * self.size {
+                for k in 0..self.size * self.size {
+                    if k != j {
+                        let v1 = asn.get(self.get_variable(&i, &j)).unwrap();
+                        let v2 = asn.get(self.get_variable(&i, &k)).unwrap();
+                        if *v1 != 0 && *v2 != 0 && v1.cmp(v2) == Ordering::Equal {
+                            asn.insert(*variable, 0);
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // alldiff(row[j])
+        for j in 0..self.size * self.size {
+            for i in 0..self.size * self.size {
+                for k in 0..self.size * self.size {
+                    if k != i {
+                        let v1 = asn.get(self.get_variable(&i, &j)).unwrap();
+                        let v2 = asn.get(self.get_variable(&k, &j)).unwrap();
+                        if *v1 != 0 && *v2 != 0 && v1.cmp(v2) == Ordering::Equal {
+                            asn.insert(*variable, 0);
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // alldiff(block[size*i, size*j])
+        for i in 0..self.size {
+            for j in 0..self.size {
+                for i1 in 0..self.size {
+                    for j1 in 0..self.size {
+                        let var1 = self.get_variable(&(self.size * i + i1), &(self.size * j + j1));
+                        for i2 in 0..self.size {
+                            for j2 in 0..self.size {
+                                let var2 =
+                                    self.get_variable(&(self.size * i + i2), &(self.size * j + j2));
+                                if var1 != var2 {
+                                    let v1 = asn.get(var1).unwrap();
+                                    let v2 = asn.get(var2).unwrap();
+                                    if *v1 != 0 && *v2 != 0 && v1.cmp(v2) == Ordering::Equal {
+                                        asn.insert(*variable, 0);
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        asn.insert(*variable, 0);
         true
+    }
+
+    fn initial_fc(&mut self, an_assignment: &[usize]) -> bool {
+        for i in 0..an_assignment.len() {
+            let v = an_assignment.get(i).unwrap();
+            if *v != 0 {
+                let mut q = self.get_relevant_variables(&i);
+                let mut consistant = true;
+                while !q.is_empty() && consistant {
+                    let y = q.pop().unwrap();
+                    if self.revise(&y, &i) {
+                        consistant = !self.d.get(y).unwrap().is_empty();
+                    }
+                }
+                if !consistant {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    fn get_relevant_variables(&self, x: &usize) -> Vec<usize> {
+        let mut q = Vec::new();
+        let col = self.get_column(x);
+        let row = self.get_row(x);
+        let cell_x = row / self.size;
+        let cell_y = col / self.size;
+
+        for i in 0..self.size * self.size {
+            if self.get_variable(&i, &col) != *x {
+                q.push(self.get_variable(&i, &col));
+            }
+        }
+        for j in 0..self.size * self.size {
+            if self.get_variable(&row, &j) != *x {
+                q.push(self.get_variable(&row, &j));
+            }
+        }
+        for i in cell_x * self.size..cell_x * self.size + 3 {
+            for j in cell_y * self.size..cell_y * self.size + 3 {
+                if self.get_variable(&i, &j) != *x {
+                    q.push(self.get_variable(&i, &j));
+                }
+            }
+        }
+
+        q
+    }
+
+    pub fn get_assignment(&mut self, p: &Array2D<usize>) -> Vec<usize> {
+        let mut asn = Vec::new();
+        for i in 0..self.size * self.size {
+            for j in 0..self.size * self.size {
+                asn.insert(self.get_variable(&i, &j), *p.get(i, j).unwrap());
+                if p.get(i, j).unwrap() != &0 {
+                    self.d.get_mut(i).unwrap().clear();
+                    self.d.get_mut(i).unwrap().push(*p.get(i, j).unwrap());
+                }
+            }
+        }
+        asn
+    }
+
+    pub fn get_puzzle(&self, asn: &[usize]) -> Array2D<usize> {
+        let mut p = Array2D::filled_with(0, self.size * self.size, self.size * self.size);
+        for i in 0..self.size * self.size {
+            for j in 0..self.size * self.size {
+                let val = asn.get(self.get_variable(&i, &j)).unwrap();
+                let _ = p.set(i, j, *val);
+            }
+        }
+        p
     }
 
     fn get_variable(&self, i: &usize, j: &usize) -> usize {
         i * self.size * self.size * j
+    }
+
+    fn get_row(&self, x: &usize) -> usize {
+        x / (self.size * self.size)
+    }
+    fn get_column(&self, x: &usize) -> usize {
+        x - ((x / (self.size * self.size)) * self.size * self.size)
     }
 }
